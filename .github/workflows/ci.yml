@@ -19,10 +19,10 @@ jobs:
         go-version: 1.16
 
     - name: Build shortener
-      run: go build -v ./cmd/shortener/main.go -o shortener
+      run: go build -o shortener -v ./cmd/shortener/main.go
     
     - name: Build redirector
-      run: go build -v ./cmd/redirector/main.go -o redirector
+      run: go build -o redirector -v ./cmd/redirector/main.go
 
     - name: Test
       run: go test -v ./...
