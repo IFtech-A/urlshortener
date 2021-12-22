@@ -63,7 +63,7 @@ func (s *Server) urlCreate(c echo.Context) error {
 
 		if exists {
 			urlsBytes = urlsInterface.([]byte)
-			logrus.Debug("url history: %v", string(urlsBytes))
+			logrus.Debugf("url history: %v", string(urlsBytes))
 			err := json.Unmarshal(urlsBytes, &urls)
 			if err != nil {
 				logrus.Error(err.Error())
@@ -119,4 +119,40 @@ func (s *Server) urlRead(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, url)
+}
+
+func (s *Server) urlReadHistory(c echo.Context) error {
+	var user *model.User
+	cc, ok := c.(*CustomContext)
+	if ok {
+		user = cc.User
+	}
+
+	urls := make([]*model.URL, 0)
+
+	// If user data exists
+	if user != nil {
+
+	} else {
+		// Read from cookie
+		session, err := s.cookieStore.Get(c.Request(), SessionCookieName)
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+		urlsInterface, exists := session.Values["myurls"]
+		var urlsBytes []byte
+
+		if exists {
+			urlsBytes = urlsInterface.([]byte)
+			logrus.Debugf("url history: %v", string(urlsBytes))
+			err := json.Unmarshal(urlsBytes, &urls)
+			if err != nil {
+				logrus.Error(err.Error())
+			}
+		}
+
+	}
+
+	return c.JSON(http.StatusOK, urls)
+
 }

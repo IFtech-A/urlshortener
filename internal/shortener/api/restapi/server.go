@@ -81,7 +81,10 @@ func (s *Server) configureRoutes() {
 	// restrictedMWGroup := []echo.MiddlewareFunc{limiter, jwtAuth}
 	// unrestrictedMWGroup := []echo.MiddlewareFunc{limiter}
 	restrictedMWGroup := []echo.MiddlewareFunc{limiter, contextMW, sessionReader, jwtAuth}
-	unrestrictedMWGroup := []echo.MiddlewareFunc{limiter, contextMW, sessionReader}
+	unrestrictedMWGroup := []echo.MiddlewareFunc{limiter, contextMW, sessionReader, middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowCredentials: true,
+	})}
 
 	/* restricted */
 	/* user */
@@ -103,7 +106,7 @@ func (s *Server) configureRoutes() {
 	/* url */
 	g.POST("/url", s.urlCreate, unrestrictedMWGroup...)
 	// return urls for the fingerprint
-	g.GET("/url", nil, unrestrictedMWGroup...)
+	g.GET("/url", s.urlReadHistory, unrestrictedMWGroup...)
 
 	g.GET("", func(c echo.Context) error {
 		cc := c.(*CustomContext)
@@ -126,7 +129,7 @@ func (s *Server) CustomContextMiddleware(next echo.HandlerFunc) echo.HandlerFunc
 func (s *Server) FingerprintMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		cookie, err := c.Cookie("X-Session-Key")
+		cookie, err := c.Cookie(SessionCookieName)
 		if err != nil || cookie.Expires.After(time.Now()) {
 			logrus.Warn("invalid session key")
 			return next(c)
