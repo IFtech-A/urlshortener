@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const URL = ({ onEnter }) => {
   const [urlValue, setUrlValue] = useState("");
@@ -19,12 +19,8 @@ const URL = ({ onEnter }) => {
     if (short !== undefined) {
       setShortened(short);
     }
-    console.log("->>" + shortened);
     setUrlValue("");
   };
-  useEffect(() => {
-    console.log(shortened);
-  }, [shortened]);
 
   return (
     <div>

@@ -1,5 +1,6 @@
 
-export const SERVER_HOST = window.location.protocol + "//app1.iferuz.me";
+
+export const SERVER_HOST = process.env.REACT_APP_API_URL;
 const API_ENDPOINT= SERVER_HOST + "/api";
 const URL_ENDPOINT= API_ENDPOINT + "/url";
 
@@ -14,9 +15,8 @@ export const getUrlHistory = async () => {
         const responseJSON = await response.json()
         return responseJSON
     } catch(e) {
-        alert(e)
         console.error(e)
-        return undefined
+        throw e
     }
 }
 
@@ -27,7 +27,7 @@ export const createShortURL = async (fullUrl) => {
             'Accept': 'application/json',
           },
           method: "POST",
-          credentials:"include",
+          credentials: "include",
           body: JSON.stringify({
             real: fullUrl
           })
@@ -40,6 +40,6 @@ export const createShortURL = async (fullUrl) => {
     } catch(e) {
         alert(e)
         console.error(e)
-        return undefined
+        throw e
     }
 }

@@ -1,44 +1,56 @@
-import {useEffect, useState} from 'react'
-import {getUrlHistory, SERVER_HOST} from '../api/api'
-
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { SERVER_HOST } from "../api/api";
+import { FAILED, IDLE, SUCCEEDED } from "../store/consts";
+import {
+  fetchURLs,
+  status as urlFetchStatus,
+  urls as allURLs,
+} from "../store/urls/urlSlice";
 
 const UrlHistory = () => {
-    // const [historyList, SetHistoryList] = useState([])
-    // const [loaded, setLoaded] = useState(false)
-    // const [loading, setLoading] = useState(false)
-    const [state, setState] = useState({
-        loaded: false,
-        historyList: [],
-    })
+  const urls = useSelector(allURLs);
+  const status = useSelector(urlFetchStatus);
+  const dispatch = useDispatch();
 
-    const fetchHistory = async ()=>{
-        let urls = await getUrlHistory()
-        if (urls !== undefined) {
-            console.log(urls)
-            // SetHistoryList([...urls])
-            setState({loaded: true, historyList: [...urls.reverse()]})
-        } else {
-            setState({loaded: true, historyList: []})
-        }
+  useEffect(() => {
+    if (status === IDLE) {
+      dispatch(fetchURLs());
     }
-    
-    useEffect(()=> fetchHistory(), [])
-        
-    return (
-        <div style={{fontFamily:'inherit'}}>
-            <h2>Your URL history:</h2>
-            {!state.loaded ? <p>Loading</p> : 
-            state.historyList.length === 0 ?  <p>You don't have any history of url shortenings</p> :
-            state.historyList.map(url => 
-                <div key={url.shortened}>
-                    <a style={{fontSize:18}} href={SERVER_HOST + "/" +url.shortened}>
-                    {SERVER_HOST + "/" +url.shortened}
-                    </a>
-                    <p style={{fontSize:12}}>{url.real}</p>
-                </div>
-            )} 
-        </div>
-    )
-}
+  }, [status, dispatch]);
 
-export default UrlHistory
+  let urlHistory = null;
+  switch (status) {
+    case SUCCEEDED:
+      if (urls?.length !== 0) {
+        urlHistory = urls.map((url) => (
+          <div key={url.shortened}>
+            <a
+              style={{ fontSize: 18 }}
+              href={SERVER_HOST + "/" + url.shortened}
+            >
+              {SERVER_HOST + "/" + url.shortened}
+            </a>
+            <p style={{ fontSize: 12 }}>{url.real}</p>
+          </div>
+        ));
+      } else {
+        urlHistory = <p>You don't have any history of url shortenings</p>;
+      }
+      break;
+    case FAILED:
+      urlHistory = <p>Failed to load url history</p>;
+      break;
+    default:
+      urlHistory = <div>Loading url history</div>;
+  }
+
+  return (
+    <div style={{ fontFamily: "inherit" }}>
+      <h2>Your URL history:</h2>
+      {urlHistory}
+    </div>
+  );
+};
+
+export default UrlHistory;
