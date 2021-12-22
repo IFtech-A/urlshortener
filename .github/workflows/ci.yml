@@ -22,7 +22,7 @@ jobs:
       run: go build -o shortener -v ./cmd/shortener/main.go
     
     - name: Build redirector
-      run: go build -o redirector -v ./cmd/redirector/main.go
+      run: go build -o redirecter -v ./cmd/redirecter/main.go
 
     - name: Test
       run: go test -v ./...
