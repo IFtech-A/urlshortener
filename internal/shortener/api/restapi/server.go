@@ -2,6 +2,7 @@ package restapi
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/IFtech-A/urlshortener/internal/shortener/store"
 	"github.com/gorilla/sessions"
@@ -45,6 +46,10 @@ func (s *Server) configureRoutes() {
 	s.configureAPIRoutes()
 	s.configureRedirectRoutes()
 	s.configureFrontendRoutes()
+
+	s.e.GET("/health_check", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
 }
 
 func (s *Server) configureStore() error {
