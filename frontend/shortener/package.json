@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && mkdir -p ../../front && cp -rf build/* ../../front/",
+    "build": "react-scripts build",
     "build:dev": "dotenv -e .env.development react-scripts build && mkdir -p ../../front && cp -rf build/* ../../front/",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
