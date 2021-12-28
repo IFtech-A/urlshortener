@@ -43,7 +43,7 @@ func (s *Server) configureAPIRoutes() {
 	// restrictedMWGroup := []echo.MiddlewareFunc{limiter, jwtAuth}
 	// unrestrictedMWGroup := []echo.MiddlewareFunc{limiter}
 	restrictedMWGroup := []echo.MiddlewareFunc{limiter, contextMW, sessionReader, jwtAuth}
-	unrestrictedMWGroup := []echo.MiddlewareFunc{limiter, contextMW, sessionReader, middleware.CORS()}
+	unrestrictedMWGroup := []echo.MiddlewareFunc{limiter, contextMW, sessionReader}
 
 	/* restricted */
 	/* user */

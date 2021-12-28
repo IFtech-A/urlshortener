@@ -2,9 +2,11 @@ package restapi
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/IFtech-A/urlshortener/internal/shortener/model"
 	"github.com/asaskevich/govalidator"
@@ -13,6 +15,58 @@ import (
 )
 
 const SessionCookieName = "urlshortener-session"
+const CookieURLs = "myurls"
+
+var ErrNoSessionCookie = errors.New("no session cookie")
+var ErrNoSessionCookieUrls = errors.New("no session cookie urls")
+
+func (s *Server) saveUrlsToCookie(r *http.Request, rw http.ResponseWriter, urls []*model.URL) error {
+	session, _ := s.cookieStore.Get(r, SessionCookieName)
+
+	//save back to session
+	urlsBytes, err := json.Marshal(urls)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	} else {
+		session.Values[CookieURLs] = urlsBytes
+	}
+	session.Save(r, rw)
+
+	return nil
+}
+
+func (s *Server) readUrlsFromCookie(r *http.Request, rw http.ResponseWriter) ([]*model.URL, error) {
+	session, err := s.cookieStore.Get(r, SessionCookieName)
+	if err != nil || session.IsNew {
+		logrus.Debug(err)
+		return nil, ErrNoSessionCookie
+	}
+
+	// Check if cookie store contains URLs
+	urlsInterface, exists := session.Values[CookieURLs]
+	if !exists {
+		return nil, ErrNoSessionCookieUrls
+	}
+
+	// Return URLs from cookie
+
+	urls := make([]*model.URL, 0)
+	urlsBytes := urlsInterface.([]byte)
+
+	err = json.Unmarshal(urlsBytes, &urls)
+	if err != nil {
+		logrus.Error(err.Error())
+		// remove problemous cookie store entry
+		delete(session.Values, CookieURLs)
+		// save it to response so that it was not sent next time from client side
+		session.Save(r, rw)
+
+		return nil, err
+	}
+
+	return urls, nil
+}
 
 func (s *Server) urlCreate(c echo.Context) error {
 	cc, ok := c.(*CustomContext)
@@ -21,17 +75,15 @@ func (s *Server) urlCreate(c echo.Context) error {
 		user = cc.User
 	}
 
-	session, err := s.cookieStore.Get(c.Request(), SessionCookieName)
-	if err != nil {
-		logrus.Error(err.Error())
-	}
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		logrus.Error(err.Error())
 		return c.NoContent(http.StatusBadRequest)
 	}
 
-	URL := &model.URL{}
+	URL := &model.URL{
+		CreatedAt: time.Now(),
+	}
 	if user != nil {
 		URL.UserID = user.ID
 	}
@@ -56,53 +108,36 @@ func (s *Server) urlCreate(c echo.Context) error {
 
 	s.store.URL().Create(URL)
 
+	// User does not exist
 	if user == nil {
-		urlsInterface, exists := session.Values["myurls"]
-		var urlsBytes []byte
-		urls := make([]*model.URL, 0)
-
-		if exists {
-			urlsBytes = urlsInterface.([]byte)
-			logrus.Debugf("url history: %v", string(urlsBytes))
-			err := json.Unmarshal(urlsBytes, &urls)
-			if err != nil {
-				logrus.Error(err.Error())
-			}
-		}
-
+		urls, _ := s.readUrlsFromCookie(c.Request(), c.Response())
 		urls = append(urls, URL)
 
 		if len(urls) > 5 {
 			urls = urls[len(urls)-5:]
 		}
 
-		//save back to session
-		urlsBytes, err = json.Marshal(urls)
+		err = s.saveUrlsToCookie(c.Request(), c.Response(), urls)
 		if err != nil {
-			logrus.Error(err.Error())
-		} else {
-			session.Values["myurls"] = urlsBytes
+			logrus.Error(err)
 		}
-		session.Save(c.Request(), c.Response())
 	} else {
-		urlsInterface, exists := session.Values["myurls"]
-		if exists {
-			delete(session.Values, "myurls")
-			urls := make([]*model.URL, 0)
-			urlsBytes := urlsInterface.([]byte)
-			logrus.Debugf("url history: %v", string(urlsBytes))
-			err := json.Unmarshal(urlsBytes, &urls)
-			if err != nil {
-				logrus.Error(err.Error())
-			}
+		urls, err := s.readUrlsFromCookie(c.Request(), c.Response())
+		if err == nil {
+			// Cookie exists and have urls
+			// merge them to users urls
+			session, _ := s.cookieStore.Get(c.Request(), SessionCookieName)
+			delete(session.Values, CookieURLs)
 
 			// Add to user's urls
 			for _, url := range urls {
 				url.UserID = user.ID
 				s.store.URL().Update(url)
 			}
+
+			session.Options.MaxAge = -1
+			session.Save(c.Request(), c.Response())
 		}
-		session.Save(c.Request(), c.Response())
 	}
 
 	return c.JSON(http.StatusCreated, URL)
@@ -128,31 +163,25 @@ func (s *Server) urlReadHistory(c echo.Context) error {
 		user = cc.User
 	}
 
-	urls := make([]*model.URL, 0)
-
+	existing := make([]*model.URL, 0)
 	// If user data exists
 	if user != nil {
 
 	} else {
-		// Read from cookie
-		session, err := s.cookieStore.Get(c.Request(), SessionCookieName)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-		urlsInterface, exists := session.Values["myurls"]
-		var urlsBytes []byte
+		urls, err := s.readUrlsFromCookie(c.Request(), c.Response())
+		logrus.Debugf("Cookie URLs: %v", urls)
 
-		if exists {
-			urlsBytes = urlsInterface.([]byte)
-			logrus.Debugf("url history: %v", string(urlsBytes))
-			err := json.Unmarshal(urlsBytes, &urls)
-			if err != nil {
-				logrus.Error(err.Error())
+		if err == nil {
+			for _, url := range urls {
+				if _, err := s.store.URL().Get(url.ShortenedURL); err == nil {
+					existing = append(existing, url)
+				}
 			}
+			s.saveUrlsToCookie(c.Request(), c.Response(), existing)
 		}
 
 	}
 
-	return c.JSON(http.StatusOK, urls)
+	return c.JSON(http.StatusOK, existing)
 
 }

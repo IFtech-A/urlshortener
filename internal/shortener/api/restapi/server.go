@@ -7,6 +7,8 @@ import (
 	"github.com/IFtech-A/urlshortener/internal/shortener/store"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/sirupsen/logrus"
 )
 
 const UserIDContextKey = "userID"
@@ -14,10 +16,17 @@ const UserEndpoint = "/user"
 const LoginEndpoint = "/login"
 const RestApiEndpoint = "/api"
 
+const (
+	Prod  = "production"
+	Debug = "debug"
+	Test  = "test"
+)
+
 type Config struct {
-	Address     string
-	StoreType   string
-	TokenSecret string
+	Address     string `env:"HOST_ADDR"`
+	StoreType   string `env:"STORE_TYPE"`
+	TokenSecret string `env:"TOKEN_SECRET"`
+	Mode        string `env:"MODE"`
 }
 
 func NewConfig() *Config {
@@ -25,6 +34,7 @@ func NewConfig() *Config {
 		Address:     "0.0.0.0:8080",
 		StoreType:   "memory",
 		TokenSecret: "hello world",
+		Mode:        Prod,
 	}
 }
 
@@ -50,6 +60,15 @@ func (s *Server) configureRoutes() {
 	s.e.GET("/health_check", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
+
+	if s.config.Mode == Debug {
+		s.e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins:     []string{"http://localhost:3000"},
+			AllowCredentials: true,
+		}))
+		logrus.Debug("Running on DEBUG mode")
+	}
+
 }
 
 func (s *Server) configureStore() error {

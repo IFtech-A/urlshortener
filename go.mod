@@ -3,6 +3,7 @@ module github.com/IFtech-A/urlshortener
 go 1.16
 
 require (
+	github.com/Netflix/go-env v0.0.0-20210215222557-e437a7e7f9fb
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/sessions v1.2.1
