@@ -26,7 +26,7 @@ const URL = ({ onEnter }) => {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div>
-          <label for="fullUrl">Input the URL here : </label>
+          <label htmlFor="fullUrl">Input the URL here : </label>
           <input
             id="fullUrl"
             placeholder="Enter a url"
