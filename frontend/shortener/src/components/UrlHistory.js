@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { SERVER_HOST } from "../api/api";
+import { SERVER_HOST } from "../api/consts";
 import { FAILED, IDLE, SUCCEEDED } from "../store/consts";
 import {
   fetchURLs,
