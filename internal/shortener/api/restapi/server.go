@@ -7,7 +7,6 @@ import (
 	"github.com/IFtech-A/urlshortener/internal/shortener/store"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -62,10 +61,21 @@ func (s *Server) configureRoutes() {
 	})
 
 	if s.config.Mode == Debug {
-		s.e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOrigins:     []string{"http://localhost:3000"},
-			AllowCredentials: true,
-		}))
+		s.e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+			return func(c echo.Context) error {
+				origin := c.Request().Header.Get("Origin")
+				if origin != "" {
+					c.Response().Header().Add("Access-Control-Allow-Origin", origin)
+					c.Response().Header().Add("Access-Control-Allow-Credentials", "true")
+					c.Response().Header().Add("Access-Control-Allow-Methods", c.Request().Method)
+					reqHeaders := c.Request().Header.Get("Access-Control-Request-Headers")
+					if reqHeaders != "" {
+						c.Response().Header().Add("Access-Control-Allow-Headers", reqHeaders)
+					}
+				}
+				return next(c)
+			}
+		})
 		logrus.Debug("Running on DEBUG mode")
 	}
 

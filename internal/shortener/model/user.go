@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -14,12 +14,22 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 
+	Role string `json:"role"`
+	Plan string `json:"plan"`
+
 	EnabledBrands bool `json:"enabled_brand"`
 
 	Brands []*Brand `json:"brands"`
 }
 
 type ApiToken struct {
+}
+
+func NewUser() *User {
+	return &User{
+		Plan: PlanFree,
+		Role: RoleUser,
+	}
 }
 
 func (u *User) GeneratePasswordHash() ([]byte, error) {
@@ -31,13 +41,13 @@ func (u *User) CheckPassword(password string) error {
 }
 
 type Claims struct {
-	ID string
+	ID string `json:"id"`
 	jwt.StandardClaims
 }
 
 func (u *User) GenerateToken(signKey []byte) (string, error) {
 
-	claims := Claims{
+	claims := &Claims{
 		ID: strconv.FormatInt(u.ID, 10),
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour).Unix(),

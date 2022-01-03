@@ -83,7 +83,7 @@ func (s *Server) login(c echo.Context) error {
 
 	if err := existingUser.CheckPassword(user.Password); err != nil {
 		logrus.Error(err.Error())
-		return c.NoContent(http.StatusForbidden)
+		return c.NoContent(http.StatusBadRequest)
 	}
 
 	token, err := existingUser.GenerateToken([]byte(s.config.TokenSecret))
