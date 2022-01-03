@@ -2,10 +2,19 @@ import { Form, Input, Button, Checkbox, Avatar, Row, Col } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 
 import "antd/dist/antd.css";
+import { login as loginAction } from "../store/user/userSlice";
+import { login } from "../api/user";
+import { useLocation, useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
 
 const Signin = () => {
-  const onFinish = (values) => {
+  const nav = useNavigate();
+  const dispatch = useDispatch();
+  const onFinish = async (values) => {
+    await login(values);
+    dispatch(loginAction(values));
     console.log("Success", values);
+    nav("/", { replace: true });
   };
   const onFinishFailed = (errorInfo) => {
     console.log("Failed", errorInfo);
@@ -22,7 +31,13 @@ const Signin = () => {
     >
       <Form
         name="signin"
-        style={{maxWidth: 400, width:'50%', padding:16, borderRadius: 8, boxShadow: '2px 2px 10px 2px rgba(0, 0, 0, 0.05)'}}
+        style={{
+          maxWidth: 400,
+          width: "50%",
+          padding: 16,
+          borderRadius: 8,
+          boxShadow: "2px 2px 10px 2px rgba(0, 0, 0, 0.05)",
+        }}
         labelCol={{ span: 6 }}
         wrapperCol={{ span: 18 }}
         initialValues={{ remember: true }}

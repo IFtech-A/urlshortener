@@ -67,4 +67,5 @@ const urlSlice = createSlice({
 export const status = (state) => state.urls.status;
 export const urls = (state) => state.urls.urls;
 export const error = (state) => state.urls.error;
+export const createStatus = (state) => state.urls.createStatus;
 export default urlSlice.reducer;

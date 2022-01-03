@@ -7,12 +7,12 @@ const [LOGIN_ACTION, SIGNUP_ACTION] = ["login", "signup"];
 export const login = async (creds) => {
   creds.action = LOGIN_ACTION;
   try {
-    const response = await fetch(USER_ENDPOINT, {
+    const response = await fetch(API_ENDPOINT + '/login', {
       method: "POST",
-      headers: [
-        ("Content-Type": "application/json"),
-        ("Accept", "application/json"),
-      ],
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(creds),
     });
     const jsonData = await response.json();
@@ -28,10 +28,10 @@ export const signup = async (creds) => {
   try {
     const response = await fetch(USER_ENDPOINT, {
       method: "POST",
-      headers: [
-        ("Content-Type": "application/json"),
-        ("Accept", "application/json"),
-      ],
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify(creds),
     });
     const jsonData = await response.json();

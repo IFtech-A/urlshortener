@@ -1,4 +1,4 @@
-import { List } from "antd";
+import { Card, List, Typography } from "antd";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { FAILED, IDLE, SUCCEEDED } from "../store/consts";
@@ -21,20 +21,24 @@ const UrlHistory = () => {
   }, [status, dispatch]);
 
   return (
-    <div style={{ fontFamily: "inherit" }}>
+    <Card
+      style={{
+        maxWidth: "100%",
+      }}
+    >
       {status === SUCCEEDED ? (
         <List
           size="large"
-          header={<h2>URL history</h2>}
+          header={<Typography.Title level={2}>URL history</Typography.Title>}
           dataSource={urls}
           renderItem={(item) => <UrlHistoryItem url={item} />}
         />
       ) : status === FAILED ? (
-        <p>Failed to load url history</p>
+        <Typography.Title type="danger" level={2}>Failed to load url history</Typography.Title>
       ) : (
-        <p>Loading url history</p>
+        <Typography.Title type="secondary" level={2}>Loading url history</Typography.Title>
       )}
-    </div>
+    </Card>
   );
 };
 

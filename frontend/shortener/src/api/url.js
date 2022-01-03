@@ -16,7 +16,7 @@ export const getUrlHistory = async () => {
   }
 };
 
-export const createShortURL = async (fullUrl) => {
+export const createShortURL = async (url) => {
   try {
     const response = await fetch(URL_ENDPOINT, {
       headers: {
@@ -26,7 +26,8 @@ export const createShortURL = async (fullUrl) => {
       method: "POST",
       credentials: "include",
       body: JSON.stringify({
-        real: fullUrl,
+        real: url.url,
+        short: url.shortURL,
       }),
     });
     const responseJSON = await response.json();

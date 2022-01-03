@@ -1,9 +1,11 @@
 import { Form, Input, Button, Checkbox, Avatar, Row, Col } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import "antd/dist/antd.css";
+import { signup } from "../api/user";
 
 const Signup = () => {
-  const onFinish = (values) => {
+  const onFinish = async (values) => {
+    await signup(values);
     console.log("Success", values);
   };
   const onFinishFailed = (errorInfo) => {

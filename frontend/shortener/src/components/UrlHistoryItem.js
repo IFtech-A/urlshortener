@@ -1,16 +1,32 @@
 import React from "react";
-import { List } from "antd";
+import { List, Space } from "antd";
 import { SERVER_HOST } from "../api/consts";
+import { Typography, Row } from "antd";
 
-const UrlHistoryItem = ({url}) => {
+const { Text, Link } = Typography;
+const UrlHistoryItem = ({ url }) => {
+  const shortURL = SERVER_HOST + "/" + url.shortened;
   return (
-    <List.Item>
-      <div key={url.shortened}>
-        <a style={{ fontSize: 18 }} href={SERVER_HOST + "/" + url.shortened}>
+    <List.Item style={{ width: "100%" }}>
+      <Space style={{ width: "100%" }} direction="vertical" key={url.shortened}>
+        <Link
+          copyable
+          ellipsis
+          style={{ fontSize: 24, display:'block' }}
+          href={shortURL}
+          target="_blank"
+        >
           {SERVER_HOST + "/" + url.shortened}
-        </a>
-        <p style={{ fontSize: 12 }}>{url.real}</p>
-      </div>
+        </Link>
+        <Row justify="space-between">
+          <Text ellipsis style={{ fontSize: 14 }}>
+            {url.real}
+          </Text>
+          <Text ellipsis style={{ fontSize: 14 }}>
+            {url.created_at}
+          </Text>
+        </Row>
+      </Space>
     </List.Item>
   );
 };
