@@ -3,12 +3,11 @@ package restapi
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
-	"net/url"
+	"time"
 
 	"github.com/IFtech-A/urlshortener/internal/shortener/model"
-	"github.com/asaskevich/govalidator"
+	"github.com/IFtech-A/urlshortener/internal/shortener/store/memorystore"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -19,22 +18,35 @@ const CookieURLs = "myurls"
 var ErrNoSessionCookie = errors.New("no session cookie")
 var ErrNoSessionCookieUrls = errors.New("no session cookie urls")
 
-func (s *Server) urlCreate(c echo.Context) error {
+func (s *Server) createURL(c echo.Context) error {
 
-	var URL *model.URL
-	if url := c.Get("validated-url"); url != nil {
-		URL = url.(*model.URL)
+	URL := new(model.URL)
+	if err := c.Bind(URL); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(URL); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	var user *model.User
 	if uc := c.Get(UserContextKey); uc != nil {
 		user = uc.(*model.User)
 	}
-	if user != nil {
-		URL.UserID = user.ID
-	}
 
-	s.store.URL().Create(URL)
+	URL.CreatedAt = time.Now()
+	URL.UpdatedAt = time.Now()
+
+	err := s.store.URL().Create(user, URL)
+	if err != nil {
+		if err == memorystore.ErrAlreadyExists {
+			logrus.Debug("Requested URL already exists")
+		} else {
+			logrus.Error(err)
+		}
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	logrus.Debugf("createURL %v", user)
 
 	// User does not exist
 	if user == nil {
@@ -50,28 +62,13 @@ func (s *Server) urlCreate(c echo.Context) error {
 			logrus.Error(err)
 		}
 	} else {
-		urls, err := s.readUrlsFromCookie(c.Request(), c.Response())
-		if err == nil {
-			// Cookie exists and have urls
-			// merge them to users urls
-			session, _ := s.cookieStore.Get(c.Request(), SessionCookieName)
-			delete(session.Values, CookieURLs)
 
-			// Add to user's urls
-			for _, url := range urls {
-				url.UserID = user.ID
-				s.store.URL().Update(url)
-			}
-
-			session.Options.MaxAge = -1
-			session.Save(c.Request(), c.Response())
-		}
 	}
 
 	return c.JSON(http.StatusCreated, URL)
 }
 
-func (s *Server) urlRead(c echo.Context) error {
+func (s *Server) readURL(c echo.Context) error {
 
 	short := c.Param("shortURL")
 
@@ -84,16 +81,39 @@ func (s *Server) urlRead(c echo.Context) error {
 	return c.JSON(http.StatusOK, url)
 }
 
-func (s *Server) urlReadHistory(c echo.Context) error {
+func (s *Server) readUserURL(c echo.Context) error {
 	var user *model.User
 	if uc := c.Get(UserContextKey); uc != nil {
 		user = uc.(*model.User)
 	}
+	logrus.Debugf("readUserURL %v", user)
 
 	existing := make([]*model.URL, 0)
 	// If user data exists
 	if user != nil {
+		urls, err := s.readUrlsFromCookie(c.Request(), c.Response())
+		if err == nil {
+			// Cookie exists and have urls
+			// merge them to users urls
+			session, _ := s.cookieStore.Get(c.Request(), SessionCookieName)
+			delete(session.Values, CookieURLs)
 
+			logrus.Debug("Adding cookie URLs to the user's URL list")
+			// Add to user's urls
+			for _, url := range urls {
+				url.UserID = user.ID
+				s.store.URL().Update(url)
+			}
+
+			session.Options.MaxAge = -1
+			session.Save(c.Request(), c.Response())
+		}
+
+		urls, err = s.store.URL().ReadUserLinks(user)
+		if err != nil {
+			logrus.Error(err)
+		}
+		existing = urls
 	} else {
 		urls, err := s.readUrlsFromCookie(c.Request(), c.Response())
 		logrus.Debugf("Cookie URLs: %v", urls)
@@ -105,6 +125,8 @@ func (s *Server) urlReadHistory(c echo.Context) error {
 				}
 			}
 			s.saveUrlsToCookie(c.Request(), c.Response(), existing)
+		} else {
+			logrus.Error(err)
 		}
 
 	}
@@ -159,40 +181,4 @@ func (s *Server) readUrlsFromCookie(r *http.Request, rw http.ResponseWriter) ([]
 	}
 
 	return urls, nil
-}
-
-func validateURLMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		body, err := io.ReadAll(c.Request().Body)
-		if err != nil {
-			logrus.Error(err.Error())
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"error":   true,
-				"message": "invalid json body format",
-			})
-		}
-
-		URL := &model.URL{}
-
-		err = json.Unmarshal(body, URL)
-		if err != nil {
-			logrus.Error(err.Error())
-			return c.NoContent(http.StatusBadRequest)
-		}
-
-		if !govalidator.IsURL(URL.RealURL) {
-			logrus.Error("invalid url")
-			return c.NoContent(http.StatusBadRequest)
-		}
-
-		fullUrl, err := url.Parse(URL.RealURL)
-		if err == nil && fullUrl.Scheme != "https" && fullUrl.Scheme != "http" {
-			logrus.Error("bad scheme: only http or https scheme allowed")
-			return c.NoContent(http.StatusBadRequest)
-		}
-
-		c.Set("validated-url", URL)
-
-		return next(c)
-	}
 }

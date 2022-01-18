@@ -11,8 +11,12 @@ import (
 type User struct {
 	ID int64 `json:"id"`
 
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password,omitempty" validate:"required"`
+
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
 
 	Role string `json:"role"`
 	Plan string `json:"plan"`

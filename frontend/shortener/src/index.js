@@ -14,9 +14,10 @@ ReactDOM.render(
     <Provider store={store}>
       <Router>
         <Routes>
-          <Route path="/" element={<App/>} />
+          <Route default path="/" element={<App/>} />
           <Route path="/signin" element={<Signin/>} />
           <Route path="/signup" element={<Signup/>} />
+          <Route path="*" element={<h1 style={{textAlign:"center"}}>Page Not Found</h1>} />
         </Routes>
       </Router>
     </Provider>

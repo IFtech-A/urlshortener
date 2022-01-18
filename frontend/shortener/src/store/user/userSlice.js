@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { signup } from "../../api/user";
+import sdk from "../../api";
 import { IDLE, LOADING, SUCCEEDED } from "../consts";
 
 const initialState = {
@@ -9,7 +9,8 @@ const initialState = {
 };
 
 const signupAsyncThunk = createAsyncThunk("user/signup", async (creds) => {
-  return await signup(creds);
+  return await sdk.createUser(creds);
+//   return await signup(creds);
 });
 
 const userSlice = createSlice({
@@ -22,6 +23,7 @@ const userSlice = createSlice({
     },
     logout(state, action) {
       state.user = null;
+      sdk.logout()
       console.log("Logged out");
     },
   },

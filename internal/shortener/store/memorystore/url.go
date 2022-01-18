@@ -59,7 +59,11 @@ func generateShortURL(url string) string {
 	return short.String()
 }
 
-func (r *urlRepo) Create(u *model.URL) error {
+func (r *urlRepo) Create(o *model.User, u *model.URL) error {
+
+	if o != nil {
+		u.UserID = o.ID
+	}
 
 	if int32(len(r.s.urlDB)) > urlGeneratorSize-1000 {
 		atomic.AddInt32(&currentDBSize, 1)
@@ -103,8 +107,8 @@ func (r *urlRepo) Create(u *model.URL) error {
 func (r *urlRepo) Get(shortenedURL string) (*model.URL, error) {
 
 	r.mu.RLock()
-	URL, exists := r.s.urlDB[shortenedURL]
 	defer r.mu.RUnlock()
+	URL, exists := r.s.urlDB[shortenedURL]
 	if !exists {
 		return nil, ErrNotFound
 	}
@@ -112,7 +116,28 @@ func (r *urlRepo) Get(shortenedURL string) (*model.URL, error) {
 	return URL, nil
 }
 
+func (r *urlRepo) ReadUserLinks(u *model.User) ([]*model.URL, error) {
+	urls := make([]*model.URL, 0)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, v := range r.s.urlDB {
+		if v.UserID == u.ID {
+			urls = append(urls, v)
+		}
+	}
+	return urls, nil
+}
+
 func (r *urlRepo) Update(u *model.URL) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	URL, exists := r.s.urlDB[u.ShortenedURL]
+	if !exists {
+		return ErrNotFound
+	}
+	URL.UserID = u.UserID
+	URL.RealURL = u.RealURL
+	URL.UpdatedAt = time.Now()
 
 	return nil
 }

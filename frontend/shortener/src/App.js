@@ -2,34 +2,33 @@ import { useDispatch, useSelector } from "react-redux";
 // import Header from "./components/Header";
 import UrlForm from "./components/UrlForm";
 import UrlHistory from "./components/UrlHistory";
-import { addNewURL, createStatus } from "./store/urls/urlSlice";
+import { addNewURL, refreshUrls } from "./store/urls/urlSlice";
 import { Col, Layout, Menu, Row, Space, Typography, Alert } from "antd";
 import {
   HomeOutlined,
   DashboardOutlined,
   TagsOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { logout, user as selectUser } from "./store/user/userSlice";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { SUCCEEDED } from "./store/consts";
 
 const { Content, Footer, Sider, Header } = Layout;
 
 function App() {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
-  const newURLStatus = useSelector(createStatus())
   const [currentContent, setCurrentContent] = useState(0);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
-  const [alertMessage, setAlertMessage] = useState(null);
+  const [alertMessage, setAlertMessage] = useState(undefined);
 
   const onUrlShortenClick = (url) => {
     setAlertMessage(null);
     let regexp =
       /^(?:(?:https?|ftp):\/\/)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/\S*)?$/;
     console.log(url);
-    if (!regexp.test(url.url)) {
+    if (!regexp.test(url.real)) {
       setAlertMessage({
         type: "error",
         message: "Invalid URL",
@@ -41,9 +40,9 @@ function App() {
     dispatch(addNewURL(url));
   };
 
-
   const onSignout = () => {
     dispatch(logout());
+    dispatch(refreshUrls());
   };
 
   const getContent = (contentID) => {
@@ -52,14 +51,11 @@ function App() {
     }
     switch (contentID) {
       case 1:
-
         return <Typography.Title>Dashboard</Typography.Title>;
       case 2:
-
         return <Typography.Title>Brands</Typography.Title>;
       case 0:
       default:
-
         return (
           <Row gutter={[0, 32]} justify="space-around">
             <Col>
@@ -74,18 +70,11 @@ function App() {
   };
 
   const onMenuClick = ({ key }) => {
-    setAlertMessage(null)
+    setAlertMessage(null);
     setCurrentContent(key);
   };
 
   const content = getContent(+currentContent);
-
-  if (newURLStatus === SUCCEEDED) {
-    setAlertMessage({
-      type: "success",
-      message: "URL successfully created"
-    })
-  }
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -104,7 +93,7 @@ function App() {
         >
           <Space style={{ padding: 8, margin: 16, height: 32 }}>
             <Link to="/profile" component={Typography.Link}>
-              {user.username}
+              {siderCollapsed ? <UserOutlined /> : user.username}
             </Link>
           </Space>
           <Menu theme="dark" onClick={onMenuClick}>

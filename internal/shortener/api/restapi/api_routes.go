@@ -14,6 +14,11 @@ import (
 const UserContextKey = "user-context"
 const UserCookieURLs = "user-cookie-urls"
 
+const LoginEndpoint = "/login"
+const ApiEndpoint = "/api"
+const UserEndpoint = "/users"
+const LinkEndpoint = "/links"
+
 func (s *Server) configureAPIRoutes() {
 	apiJWTConfig := middleware.DefaultJWTConfig
 	apiJWTConfig.SigningKey = []byte(s.config.TokenSecret)
@@ -21,9 +26,9 @@ func (s *Server) configureAPIRoutes() {
 	apiJWTConfig.Skipper = userAuthSkipper()
 	apiJWTConfig.Claims = &model.Claims{}
 
-	api := s.e.Group("/api")
-	userApi := api.Group("/user")
-	urlApi := api.Group("/url")
+	api := s.e.Group(ApiEndpoint)
+	userApi := api.Group(UserEndpoint)
+	urlApi := api.Group(LinkEndpoint)
 
 	//Custom Context set
 	// contextMW := s.CustomContextMiddleware
@@ -40,7 +45,8 @@ func (s *Server) configureAPIRoutes() {
 	/* restricted */
 	/* user */
 	userApi.GET("/:id", s.userRead, restrictedMWGroup...)
-	userApi.GET("/:id/url", nil, restrictedMWGroup...)
+	userApi.GET("/:id"+LinkEndpoint, s.readUserURL, restrictedMWGroup...)
+	userApi.POST("/:id"+LinkEndpoint, s.createURL, restrictedMWGroup...)
 	userApi.PUT("/:id", nil, restrictedMWGroup...)
 	userApi.DELETE("/:id", nil, restrictedMWGroup...)
 
@@ -57,9 +63,9 @@ func (s *Server) configureAPIRoutes() {
 		return c.NoContent(http.StatusOK)
 	})
 	/* url */
-	urlApi.POST("", s.urlCreate, append(unrestrictedMWGroup, validateURLMiddleware)...)
-	urlApi.GET("", s.urlReadHistory, unrestrictedMWGroup...)
-	urlApi.PUT("", nil, append(restrictedMWGroup, validateURLMiddleware)...)
+	urlApi.POST("", s.createURL, unrestrictedMWGroup...)
+	urlApi.GET("", s.readUserURL, unrestrictedMWGroup...)
+	urlApi.PUT("", nil, restrictedMWGroup...)
 	urlApi.DELETE("", nil, restrictedMWGroup...)
 
 	api.GET("", func(c echo.Context) error {
@@ -94,8 +100,8 @@ func jwtAuthSuccessHandler(c echo.Context) {
 
 func userAuthSkipper() middleware.Skipper {
 
-	const userRegistrationEndpoint = RestApiEndpoint + UserEndpoint
-	const loginEndpoint = RestApiEndpoint + LoginEndpoint
+	const userRegistrationEndpoint = ApiEndpoint + UserEndpoint
+	const loginEndpoint = ApiEndpoint + LoginEndpoint
 	return func(c echo.Context) bool {
 		if c.Request().Method != http.MethodPost {
 			return false

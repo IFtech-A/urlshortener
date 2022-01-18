@@ -5,10 +5,10 @@ import { Typography, Row } from "antd";
 
 const { Text, Link } = Typography;
 const UrlHistoryItem = ({ url }) => {
-  const shortURL = SERVER_HOST + "/" + url.shortened;
+  const shortURL = SERVER_HOST + "/" + url.short;
   return (
     <List.Item style={{ width: "100%" }}>
-      <Space style={{ width: "100%" }} direction="vertical" key={url.shortened}>
+      <Space style={{ width: "100%" }} direction="vertical" key={url.short}>
         <Link
           copyable
           ellipsis
@@ -16,7 +16,7 @@ const UrlHistoryItem = ({ url }) => {
           href={shortURL}
           target="_blank"
         >
-          {SERVER_HOST + "/" + url.shortened}
+          {SERVER_HOST + "/" + url.short}
         </Link>
         <Row justify="space-between">
           <Text ellipsis style={{ fontSize: 14 }}>

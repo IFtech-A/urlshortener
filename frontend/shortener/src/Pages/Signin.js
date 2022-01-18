@@ -3,18 +3,25 @@ import { UserOutlined, LockOutlined } from "@ant-design/icons";
 
 import "antd/dist/antd.css";
 import { login as loginAction } from "../store/user/userSlice";
-import { login } from "../api/user";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { useDispatch } from "react-redux";
+import sdk from "../api";
+import { refreshUrls } from "../store/urls/urlSlice";
 
 const Signin = () => {
   const nav = useNavigate();
   const dispatch = useDispatch();
   const onFinish = async (values) => {
-    await login(values);
-    dispatch(loginAction(values));
-    console.log("Success", values);
-    nav("/", { replace: true });
+    try {
+      await sdk.authenticate(values.username, values.password);
+      dispatch(loginAction(values));
+      dispatch(refreshUrls());
+      console.log("Success", values);
+      nav("/", { replace: true });
+    } catch (e) {
+      alert(e);
+      console.error(e);
+    }
   };
   const onFinishFailed = (errorInfo) => {
     console.log("Failed", errorInfo);

@@ -18,8 +18,9 @@ type BrandRepo interface {
 }
 
 type URLRepo interface {
-	Create(*model.URL) error
+	Create(*model.User, *model.URL) error
 	Get(string) (*model.URL, error)
 	Update(*model.URL) error
 	Delete(string) error
+	ReadUserLinks(*model.User) ([]*model.URL, error)
 }

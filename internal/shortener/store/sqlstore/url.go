@@ -6,7 +6,7 @@ type urlRepo struct {
 	s *Store
 }
 
-func (r *urlRepo) Create(u *model.URL) error {
+func (r *urlRepo) Create(o *model.User, u *model.URL) error {
 	return nil
 }
 func (r *urlRepo) Get(urlname string) (*model.URL, error) {
@@ -21,4 +21,7 @@ func (r *urlRepo) Update(u *model.URL) error {
 func (r *urlRepo) Delete(urlname string) error {
 
 	return nil
+}
+func (r *urlRepo) ReadUserLinks(u *model.User) ([]*model.URL, error) {
+	return nil, nil
 }

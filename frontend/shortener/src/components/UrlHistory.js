@@ -34,9 +34,13 @@ const UrlHistory = () => {
           renderItem={(item) => <UrlHistoryItem url={item} />}
         />
       ) : status === FAILED ? (
-        <Typography.Title type="danger" level={2}>Failed to load url history</Typography.Title>
+        <Typography.Title type="danger" level={2}>
+          Failed to load url history
+        </Typography.Title>
       ) : (
-        <Typography.Title type="secondary" level={2}>Loading url history</Typography.Title>
+        <Typography.Title type="secondary" level={2}>
+          Loading url history
+        </Typography.Title>
       )}
     </Card>
   );

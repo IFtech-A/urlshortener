@@ -1,12 +1,26 @@
-import { Form, Input, Button, Checkbox, Avatar, Row, Col } from "antd";
+import { Form, Input, Button, Avatar, Row, Col } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import "antd/dist/antd.css";
-import { signup } from "../api/user";
+import { useNavigate } from "react-router";
+import sdk from "../api";
 
 const Signup = () => {
+  const nav = useNavigate();
   const onFinish = async (values) => {
-    await signup(values);
-    console.log("Success", values);
+    try {
+      await sdk.createUser({
+        username: values.username,
+        email: values.email,
+        password: values.password,
+        firstname: values.firstname,
+        lastname: values.lastname,
+      });
+      console.log("Success", values);
+      nav("/signin", { replace: true });
+    } catch (e) {
+      console.error(values, e);
+      throw e;
+    }
   };
   const onFinishFailed = (errorInfo) => {
     console.log("Failed", errorInfo);
@@ -45,6 +59,18 @@ const Signup = () => {
             />
           </Col>
         </Row>
+        <Form.Item
+          label="Email"
+          name="email"
+          rules={[
+            {
+              required: true,
+              message: "Please enter email",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
         <Form.Item
           label="Username"
           name="username"
@@ -114,13 +140,6 @@ const Signup = () => {
           >
             <Input placeholder="Last name" />
           </Form.Item>
-        </Form.Item>
-        <Form.Item
-          name="remember"
-          valuePropName="checked"
-          wrapperCol={{ offset: 6, span: 18 }}
-        >
-          <Checkbox>Remember Me</Checkbox>
         </Form.Item>
 
         <Row justify="center" align="middle">

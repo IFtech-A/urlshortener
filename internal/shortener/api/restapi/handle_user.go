@@ -1,8 +1,6 @@
 package restapi
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 	"strconv"
 
@@ -13,17 +11,13 @@ import (
 
 func (s *Server) userCreate(c echo.Context) error {
 
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		logrus.Error(err.Error())
-		return c.NoContent(http.StatusBadRequest)
+	user := new(model.User)
+	if err := c.Bind(user); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	user := &model.User{}
-	err = json.Unmarshal(body, user)
-	if err != nil {
-		logrus.Error(err.Error())
-		return c.NoContent(http.StatusBadRequest)
+	if err := c.Validate(user); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	passHash, err := user.GeneratePasswordHash()
@@ -38,9 +32,11 @@ func (s *Server) userCreate(c echo.Context) error {
 		logrus.Error(err.Error())
 		return c.NoContent(http.StatusBadRequest)
 	}
-	logrus.Debug(user.ID)
+	logrus.Debug(user)
+	cUser := *user
+	cUser.Password = ""
 
-	return c.NoContent(http.StatusCreated)
+	return c.JSON(http.StatusCreated, cUser)
 }
 
 func (s *Server) userRead(c echo.Context) error {
@@ -62,17 +58,9 @@ func (s *Server) userRead(c echo.Context) error {
 
 func (s *Server) login(c echo.Context) error {
 
-	body, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		logrus.Error(err.Error())
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	user := &model.User{}
-	err = json.Unmarshal(body, user)
-	if err != nil {
-		logrus.Error(err.Error())
-		return c.NoContent(http.StatusBadRequest)
+	user := new(model.User)
+	if err := c.Bind(user); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	existingUser, err := s.store.User().GetByUsername(user.Username)
@@ -87,13 +75,16 @@ func (s *Server) login(c echo.Context) error {
 	}
 
 	token, err := existingUser.GenerateToken([]byte(s.config.TokenSecret))
+	if err != nil {
+		logrus.Error(err)
+		return c.NoContent(http.StatusBadGateway)
+	}
 
-	// cookie := &http.Cookie{
-	// 	Name:     s.config.AuthHeader,
-	// 	Value:    token,
-	// 	HttpOnly: true,
-	// }
+	cUser := *existingUser
+	cUser.Password = ""
 
-	// c.SetCookie(cookie)
-	return c.JSON(http.StatusOK, map[string]string{"token": token})
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": token,
+		"user":  cUser,
+	})
 }

@@ -5,15 +5,13 @@ import (
 	"net/http"
 
 	"github.com/IFtech-A/urlshortener/internal/shortener/store"
+	"github.com/go-playground/validator"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
 
 const UserIDContextKey = "userID"
-const UserEndpoint = "/user"
-const LoginEndpoint = "/login"
-const RestApiEndpoint = "/api"
 
 const (
 	Prod  = "production"
@@ -51,7 +49,20 @@ func New(conf *Config) *Server {
 	}
 }
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	return nil
+}
+
 func (s *Server) configureRoutes() {
+	s.e.Validator = &CustomValidator{validator: validator.New()}
+
 	s.configureAPIRoutes()
 	s.configureRedirectRoutes()
 	s.configureFrontendRoutes()

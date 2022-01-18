@@ -1,8 +1,5 @@
-import {
-  createAsyncThunk,
-  createSlice,
-} from "@reduxjs/toolkit";
-import { createShortURL, getUrlHistory } from "../../api/api";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import sdk from "../../api";
 import { IDLE, LOADING, FAILED, SUCCEEDED } from "../consts";
 
 const initialState = {
@@ -15,14 +12,15 @@ const initialState = {
 export const addNewURL = createAsyncThunk(
   "urls/addNewURL",
   async (initialURL, thunkAPI) => {
-    const url = await createShortURL(initialURL);
+    const url = await sdk.createLink(initialURL);
+    console.log("url addnewurl thunk", url);
 
     return url;
   }
 );
 
 export const fetchURLs = createAsyncThunk("urls/fetchURLs", async () => {
-  const urls = await getUrlHistory();
+  const urls = await sdk.readUserLinks();
 
   return urls;
 });
@@ -32,8 +30,10 @@ const urlSlice = createSlice({
   initialState,
   reducers: {
     urlAdded(state, action) {
-      state.status = IDLE
-      state.createStatus = IDLE
+      state.createStatus = IDLE;
+    },
+    refreshUrls(state, action) {
+      state.status = IDLE;
     },
   },
   extraReducers(builder) {
@@ -46,7 +46,6 @@ const urlSlice = createSlice({
         state.status = IDLE;
       })
       .addCase(addNewURL.rejected, (state, action) => {
-        console.log({state,action})
         state.createStatus = FAILED;
         state.error = action.error.message;
       })
@@ -68,4 +67,5 @@ export const status = (state) => state.urls.status;
 export const urls = (state) => state.urls.urls;
 export const error = (state) => state.urls.error;
 export const createStatus = (state) => state.urls.createStatus;
+export const { urlAdded, refreshUrls } = urlSlice.actions;
 export default urlSlice.reducer;

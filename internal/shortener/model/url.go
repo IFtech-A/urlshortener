@@ -9,8 +9,8 @@ type URL struct {
 	ID int `json:"id,omitempty"`
 
 	UserID       int64     `json:"owner_id"`
-	ShortenedURL string    `json:"shortened"`
-	RealURL      string    `json:"real"`
+	ShortenedURL string    `json:"short" validate:"omitempty,alphanumunicode"`
+	RealURL      string    `json:"real" validate:"required,url"`
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 	UpdatedAt    time.Time `json:"updated_at,omitempty"`
 }
