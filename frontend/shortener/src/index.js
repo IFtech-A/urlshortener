@@ -12,7 +12,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 ReactDOM.render(
   <React.StrictMode>
     <Provider store={store}>
-      <Router>
+      <Router basename="/app">
         <Routes>
           <Route default path="/" element={<App/>} />
           <Route path="/signin" element={<Signin/>} />
